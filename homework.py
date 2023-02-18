@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from typing import List, Dict, Union, Type, Tuple
+from typing import Dict, Union, Type
 
 
 @dataclass
@@ -97,7 +97,7 @@ class Swimming(Training):
 
     COEF_FOR_SPEED: float = 1.1
     LEN_STEP: float = 1.38
-    CONST_2: int = 2
+    CONST_FOR_CALORIES_SWIMMING: int = 2
 
     def __init__(self, action: int, duration: float, weight: float,
                  length_pool: int, count_pool: int) -> None:
@@ -111,14 +111,11 @@ class Swimming(Training):
 
     def get_spent_calories(self) -> float:
         return ((self.get_mean_speed()
-                 + self.COEF_FOR_SPEED) * self.CONST_2 * self.weight
-                * self.duration)
+                 + self.COEF_FOR_SPEED) * self.CONST_FOR_CALORIES_SWIMMING
+                * self.weight * self.duration)
 
 
-list_of_types = Tuple[int, float, float]
-
-
-def read_package(workout_type: str, data: List[list_of_types]) -> Training:
+def read_package(workout_type: str, data: Type[Union[int, float]]) -> Training:
     """Прочитать данные полученные от датчиков."""
 
     dict_class: Dict[str, Type[Union[Swimming, Running, SportsWalking]]] = {
@@ -129,7 +126,7 @@ def read_package(workout_type: str, data: List[list_of_types]) -> Training:
     if workout_type in dict_class:
         return dict_class[workout_type](*data)
     else:
-        print("Нет такого типа треннировки")
+        raise KeyError(f"Нет такого типа треннировки, как {workout_type}")
 
 
 def main(training: Training) -> None:
