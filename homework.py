@@ -1,13 +1,17 @@
+from dataclasses import dataclass
+
+from typing import List, Dict, Union, Type
+
+
+@dataclass()
 class InfoMessage:
     """Информационное сообщение о тренировке."""
 
-    def __init__(self, training_type: str, duration: float,
-                 distance: float, speed: float, calories: float):
-        self.training_type = training_type
-        self.duration = duration
-        self.distance = distance
-        self.speed = speed
-        self.calories = calories
+    training_type: str
+    duration: float
+    distance: float
+    speed: float
+    calories: float
 
     def get_message(self) -> str:
         return f'Тип тренировки: {self.training_type}; ' \
@@ -20,9 +24,9 @@ class InfoMessage:
 class Training:
     """Базовый класс тренировки."""
 
-    LEN_STEP = 0.65
-    M_IN_KM = 1000
-    H_IN_M = 60
+    LEN_STEP: float = 0.65
+    M_IN_KM: int = 1000
+    H_IN_M: int = 60
 
     def __init__(self, action: int, duration: float, weight: float) -> None:
         self.action = action
@@ -31,19 +35,18 @@ class Training:
 
     def get_distance(self) -> float:
         """Получить дистанцию в км."""
-        distance: float = self.action * self.LEN_STEP / self.M_IN_KM
-        return distance
+
+        return self.action * self.LEN_STEP / self.M_IN_KM
 
     def get_mean_speed(self) -> float:
         """Получить среднюю скорость движения."""
 
-        speed: float = self.get_distance() / self.duration
-        return speed
+        return self.get_distance() / self.duration
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий."""
 
-        pass
+        raise NotImplementedError("Метод не переопределяется у наследника!")
 
     def show_training_info(self) -> InfoMessage:
         """Вернуть информационное сообщение о выполненной тренировке."""
@@ -60,18 +63,18 @@ class Running(Training):
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий."""
-        cal_run: float = ((self.CALORIES_MEAN_SPEED_MULTIPLIER
-                           * self.get_mean_speed()
-                           + self.CALORIES_MEAN_SPEED_SHIFT) * self.weight
-                          / self.M_IN_KM * self.duration * 60)
-        return cal_run
+
+        return ((self.CALORIES_MEAN_SPEED_MULTIPLIER
+                 * self.get_mean_speed()
+                 + self.CALORIES_MEAN_SPEED_SHIFT) * self.weight
+                / self.M_IN_KM * self.duration * 60)
 
 
 class SportsWalking(Training):
     """Тренировка: спортивная ходьба."""
 
-    CALORIES_MEAN_SPEED_1: float = 0.035
-    CALORIES_MEAN_SPEED_2: float = 0.029
+    COEF_FOR_WEIGHT: float = 0.035
+    COEF_FOR_SPEED: float = 0.029
     KMH_IN_MS: float = 0.278
     SM_IN_M: int = 100
 
@@ -84,17 +87,17 @@ class SportsWalking(Training):
         dur_min = self.duration * self.H_IN_M
         h_met = self.height / self.SM_IN_M
         speed_ms = self.get_mean_speed() * self.KMH_IN_MS
-        return (self.CALORIES_MEAN_SPEED_1 * self.weight
-                + (speed_ms ** 2 / h_met) * self.CALORIES_MEAN_SPEED_2
+        return (self.COEF_FOR_WEIGHT * self.weight
+                + (speed_ms ** 2 / h_met) * self.COEF_FOR_SPEED
                 * self.weight) * dur_min
 
 
 class Swimming(Training):
     """Тренировка: плавание."""
 
-    sdwig_speed: float = 1.1
+    SDWIG_SPEED: float = 1.1
     LEN_STEP: float = 1.38
-    CONST_2 = 2
+    CONST_2: int = 2
 
     def __init__(self, action: int, duration: float, weight: float,
                  length_pool: int, count_pool: int) -> None:
@@ -108,19 +111,20 @@ class Swimming(Training):
 
     def get_spent_calories(self) -> float:
         return (self.get_mean_speed()
-                + self.sdwig_speed) * self.CONST_2 * self.weight \
+                + self.SDWIG_SPEED) * self.CONST_2 * self.weight \
             * self.duration
 
 
-def read_package(workout_type: str, data: list) -> Training:
+def read_package(workout_type: str, data: List[int]) -> Training:
     """Прочитать данные полученные от датчиков."""
 
-    dict_class = {
+    dict_class: Dict[str, Type[Union[Swimming, Running, SportsWalking]]] = {
         'SWM': Swimming,
         'RUN': Running,
         'WLK': SportsWalking
     }
-    return dict_class[workout_type](*data)
+    if workout_type in dict_class:
+        return dict_class[workout_type](*data)
 
 
 def main(training: Training) -> None:
@@ -139,3 +143,4 @@ if __name__ == '__main__':
     for workout_type, data in packages:
         training = read_package(workout_type, data)
         main(training)
+
